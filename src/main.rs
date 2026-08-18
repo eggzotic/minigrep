@@ -1,9 +1,14 @@
 use minigrep::search;
-use std::{env, error::Error, fs, process};
+use std::{
+    env,
+    error::Error,
+    fs::File,
+    io::{BufRead, BufReader},
+    process,
+};
 
 mod config;
 fn main() {
-    // let args: Vec<String> = env::args().collect();
     let config = config::Config::build(env::args()).unwrap_or_else(|err| {
         eprintln!("Problem parsing args: {err}");
         process::exit(1);
@@ -16,8 +21,15 @@ fn main() {
 }
 
 fn run(config: config::Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(&config.file_path)?;
-    let results = search(config.ignore_case(), &config.query, &contents);
+    let file_content = File::open(&config.file_path)?;
+    let content_reader = BufReader::new(file_content);
+
+    let results = search(
+        config.ignore_case(),
+        &config.query,
+        // &contents,
+        content_reader.lines(),
+    );
 
     for line in results {
         println!("{line}");

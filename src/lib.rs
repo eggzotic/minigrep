@@ -1,28 +1,36 @@
-// pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+use std::io;
+
 pub fn search<'a>(
     ignore_case: bool,
-    query: &str,
-    contents: &'a str,
-) -> impl Iterator<Item = &'a str> {
+    query: &'a str,
+    // contents: &'a str,
+    content_reader: impl Iterator<Item = io::Result<String>>,
+) -> impl Iterator<Item = String> {
     let query = if ignore_case {
         query.to_lowercase()
     } else {
         query.to_string()
     };
-    contents.lines().filter(move |&line| {
-        let line = if ignore_case {
-            line.to_lowercase()
-        } else {
-            line.to_string()
-        };
-        line.contains(&query)
-    })
-    // .collect()
+
+    content_reader
+        .map(|line| line.unwrap())
+        .filter(move |line| {
+            let line = if ignore_case {
+                line.to_lowercase()
+            } else {
+                line.to_string()
+            };
+            line.contains(&query)
+        })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn text_as_iterator(text: &str) -> impl Iterator<Item = io::Result<String>> {
+        text.split("\n").map(|s| io::Result::Ok(s.to_string()))
+    }
 
     #[test]
     fn case_sensitive() {
@@ -32,9 +40,10 @@ Rust:
 safe, fast, productive.
 Pick three.
 Duct tape.";
+
         assert_eq!(
             vec!["safe, fast, productive."],
-            search(false, query, contents).collect::<Vec<&str>>()
+            search(false, query, text_as_iterator(contents)).collect::<Vec<String>>()
         );
     }
 
@@ -49,7 +58,7 @@ Trust me.";
 
         assert_eq!(
             vec!["Rust:", "Trust me."],
-            search(true, query, contents).collect::<Vec<&str>>()
+            search(true, query, text_as_iterator(contents)).collect::<Vec<String>>()
         );
     }
 }
