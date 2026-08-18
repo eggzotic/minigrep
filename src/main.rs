@@ -27,9 +27,15 @@ fn run(config: config::Config) -> Result<(), Box<dyn Error>> {
     let results = search(config.ignore_case(), &config.query, content_reader.lines());
 
     let mut lines_matched = 0;
-    for line in results {
+    for entry in results {
+        let (line_number, line) = entry?;
         lines_matched += 1;
-        println!("{}", line?);
+
+        if config.show_line_number {
+            println!("{line_number}: {line}");
+        } else {
+            println!("{line}");
+        }
     }
     eprintln!("Total lines matched: {lines_matched}");
     Ok(())

@@ -5,6 +5,7 @@ pub struct Config {
     pub file_path: String,
     ignore_case_switch: bool,
     ignore_case_env: bool,
+    pub show_line_number: bool,
 }
 
 impl Config {
@@ -19,20 +20,31 @@ impl Config {
     ) -> Result<Self, &'static str> {
         // skip the first item (this binary), which is guaranteed(?) present
         args.next();
-        // next item is either the case-insensitive switch, or the query-string
-        let first_arg = match args.next() {
-            Some(arg) => arg,
-            None => return Err("insufficient args"),
-        };
-        let ignore_case_switch = first_arg == "-i";
-        let query = if ignore_case_switch {
-            match args.next() {
-                Some(query) => query,
-                None => return Err("no query found"),
+        let mut ignore_case_switch = false;
+        let mut show_line_number = false;
+
+        let mut processing_switches = true;
+        let mut next_arg = String::from("");
+        
+        while processing_switches {
+            // next item is either the case-insensitive switch, or the query-string
+            next_arg = match args.next() {
+                Some(arg) => arg,
+                None => return Err("insufficient args"),
+            };
+            if next_arg.starts_with("-") {
+                if next_arg == "-i" {
+                    ignore_case_switch = true;
+                } else if next_arg == "-n" {
+                    show_line_number = true;
+                } else {
+                    return Err("Unknown switch: {next_arg}");
+                }
+            } else {
+                processing_switches = false;
             }
-        } else {
-            first_arg
-        };
+        }
+        let query = next_arg;
         let file_path = match args.next() {
             Some(path) => path,
             None => return Err("file path not provided"),
@@ -45,6 +57,7 @@ impl Config {
             file_path,
             ignore_case_switch,
             ignore_case_env,
+            show_line_number,
         })
     }
 }
