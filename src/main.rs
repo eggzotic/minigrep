@@ -24,15 +24,13 @@ fn run(config: config::Config) -> Result<(), Box<dyn Error>> {
     let file_content = File::open(&config.file_path)?;
     let content_reader = BufReader::new(file_content);
 
-    let results = search(
-        config.ignore_case(),
-        &config.query,
-        // &contents,
-        content_reader.lines(),
-    );
+    let results = search(config.ignore_case(), &config.query, content_reader.lines());
 
+    let mut lines_matched = 0;
     for line in results {
+        lines_matched += 1;
         println!("{line}");
     }
+    eprintln!("Total lines matched: {lines_matched}");
     Ok(())
 }
