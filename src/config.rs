@@ -14,28 +14,29 @@ impl Config {
     }
 
     // Build a Config instance from cmd-line args passed-in
-    pub fn build(args: &[String]) -> Result<Self, &'static str> {
-        let args_length = args.len();
-        if args_length < 3 {
-            return Err("not enough args");
-        }
-        let mut args_iter = args.iter();
-        // skip the first item (this binary)
-        args_iter.next();
+    pub fn build(
+        mut args: impl Iterator<Item = String>, // args: &[String]
+    ) -> Result<Self, &'static str> {
+        // skip the first item (this binary), which is guaranteed(?) present
+        args.next();
         // next item is either the case-insensitive switch, or the query-string
-        let first_arg = args_iter.next().unwrap();
+        let first_arg = match args.next() {
+            Some(arg) => arg,
+            None => return Err("insufficient args"),
+        };
         let ignore_case_switch = first_arg == "-i";
-        // if case-insensitive switch is present, then the args need to be even longer
-        if ignore_case_switch && args_length < 4 {
-            return Err("not enough args");
-        }
         let query = if ignore_case_switch {
-            args_iter.next().unwrap()
+            match args.next() {
+                Some(query) => query,
+                None => return Err("no query found"),
+            }
         } else {
             first_arg
-        }
-        .clone();
-        let file_path = args_iter.next().unwrap().clone();
+        };
+        let file_path = match args.next() {
+            Some(path) => path,
+            None => return Err("file path not provided"),
+        };
         // check for case-insensitivity via the ENV as well
         let ignore_case_env = env::var("IGNORE_CASE").is_ok();
 
