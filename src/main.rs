@@ -1,6 +1,7 @@
+use clap::Parser;
 use minigrep::search;
+
 use std::{
-    env,
     error::Error,
     fs::File,
     io::{BufRead, BufReader},
@@ -8,11 +9,9 @@ use std::{
 };
 
 mod config;
+
 fn main() {
-    let config = config::Config::build(env::args()).unwrap_or_else(|err| {
-        eprintln!("Problem parsing args: {err}");
-        process::exit(1);
-    });
+    let config = config::Config::parse();
 
     if let Err(e) = run(config) {
         eprintln!("Application error: {e}");
@@ -24,7 +23,7 @@ fn run(config: config::Config) -> Result<(), Box<dyn Error>> {
     let file_handle = File::open(&config.file_path)?;
     let content_reader = BufReader::new(file_handle);
 
-    let results = search(config.ignore_case(), &config.query, content_reader.lines());
+    let results = search(config.ignore_case, &config.query, content_reader.lines());
 
     let mut lines_matched = 0;
     for entry in results {
